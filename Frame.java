@@ -1,77 +1,131 @@
 package scrabble;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 
-// Represents the Frame each player has 
 public class Frame {
+
+	public static final int MAX_TILES = 7;
+	private ArrayList<Tile> tiles = new ArrayList<Tile>();
 	
-	private int num_Tiles = 7;
-	private char[] letter = new char[num_Tiles];
-	public Pool pool;
-	
-	
-	//Construct the Frame with initial letters
-	public Frame(Pool poolIn) { 	
-		//check if pool is empty
-		if(poolIn == null)
-			throw new IllegalArgumentException();
-		
-		pool = poolIn;
-		for(int i = 0;i<7;i++){
-			letter[i] = pool.tileDraw();
-		}
+	Frame() {
+		tiles.clear();
+		return;
 	}
 	
-	//Accessors
-	// Remove a letter from the Frame and returns it to the pool.
-	public void removeLetter(char letter) {		 
-		for(int i = 0; i< num_Tiles;i++){
-			if(this.letter[i] == letter){
-				this.letter[i] = ' ';
-				break;
+	Frame (Frame originalFrame) {
+		this.tiles = new ArrayList<Tile> (originalFrame.getAllTiles());
+		return;
+	}
+	
+	public int size () {
+		return(tiles.size());
+	}
+	
+	public boolean isEmpty () {
+		return(tiles.isEmpty());
+	}
+	
+	public boolean isFull () {
+		return(tiles.size() == MAX_TILES);
+	}
+	
+	public int find (char letter) {
+		boolean found = false;
+		int index = 0;
+		while ((index < tiles.size()) && !found) {
+			if (tiles.get(index).matches(letter)) {
+				found = true;
 			}
+			else {
+				index++;
+			}
+		}		
+		if (!found) {
+			index = -1;
 		}
-		
+		return(index);
 	}
 
-	//Check for a letter in the Frame (True if it is, False if not)
-	public boolean isLetterIn(char letter) {
-		for(int i = 0; i<num_Tiles;i++){
-			if(this.letter[i] == letter)
-				return true;
-		}
-		
-		
-		return false;
+	public void removeAt (int index) {
+		tiles.remove(index);
+		return;
 	}
-
 	
-	public boolean isEmpty() {
-		for(int i=0;i<num_Tiles;i++){
-			if(letter[i] != ' '){
-				return false;
-			}
+	public void removeChar (char letter) {
+		// precondition: isAvailable(letter) is true
+		// postcondition: updates undoTiles so that undo can be performed
+		int index = find(letter);
+		tiles.remove(index);
+		return;
+	}
+	
+	public boolean isAvailable (char letter) {
+		boolean found;
+		if (find(letter) == -1) {
+			found = false;
 		}
-		return true;
-	}
-
-
-	public char[] getLetters() {		//Access letters in the Frame
-		return letter;
-	}
-
-
-	public void refill() {
-		for (int i =0;i<num_Tiles;i++) {
-			if(letter[i] == ' ' && pool.poolSize() != 0){
-				letter[i] = pool.tileDraw();
-			}
+		else {
+			found = true;
 		}
+		return(found);
+	}
+	
+	public boolean isAvailable (String letters) {
+		Frame copyFrame = new Frame(this);
+		boolean found = true;
+		int indexLetters = 0, indexTiles;
+		
+		while ( (indexLetters<letters.length()) && found) {
+			indexTiles = copyFrame.find(letters.charAt(indexLetters));
+			if (indexTiles == -1) {
+				found = false;
+			}
+			else {
+				copyFrame.removeAt(indexTiles);
+			}
+			indexLetters++;
+		}
+		return(found);
+	}
+	
+	public Tile getTile (int index) {
+		return(tiles.get(index));
 	}
 
-
-	public void displayFrame() { 		//Method to display the Frame
-		System.out.print("Frame:");
-		System.out.println(Arrays.toString(letter));
+	public ArrayList<Tile> getAllTiles () {
+		return(tiles);
+	}	
+	
+	public void refill (Pool pool) {
+		int numTilesToDraw;
+		ArrayList<Tile> newTiles;
+		numTilesToDraw = MAX_TILES - tiles.size();
+		newTiles = pool.draw(numTilesToDraw);
+		tiles.addAll(newTiles);
+		return;
 	}
+	
+	public void exchange (String letters, Pool pool) {
+		// precondition: the letters are available in the frame & there are sufficient tiles in the pool
+		int index;
+		Tile tile;
+		
+		for (int i=0; i<letters.length(); i++) {
+			index = find(letters.charAt(i));
+			tile = tiles.get(index);
+			pool.add(tile);
+			tiles.remove(index);
+		}		
+		refill(pool);
+		return;
+	}
+	
+	public void add (char letter) {
+		Tile tile;
+		
+		tile = new Tile (letter);
+		tiles.add(tile);
+	}
+	
+	
 }
